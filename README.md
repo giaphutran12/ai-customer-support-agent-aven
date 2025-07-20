@@ -1,15 +1,15 @@
 # AI Customer Service Agent
 
-A sophisticated customer service automation platform that leverages advanced AI to provide intelligent, context-aware responses using real-time vector search and natural language processing.
+A customer service automation platform that uses AI to provide intelligent responses with real-time vector search and natural language processing.
 
 ## 🚀 What This Does
 
-Built a fully functional AI customer service agent that can:
+Built an AI customer service agent that can:
 
-- **Intelligently answer customer queries** using semantic search across company knowledge base
-- **Process real-time conversations** with context awareness and memory
+- **Answer customer queries** using semantic search across company knowledge base
+- **Process conversations** with context awareness
 - **Scale automatically** without human intervention
-- **Learn from company data** to provide accurate, up-to-date information
+- **Learn from company data** to provide accurate information
 
 ## 🛠 Tech Stack
 
@@ -27,8 +27,8 @@ Built a fully functional AI customer service agent that can:
 
 - Scrapes company websites and documentation automatically
 - Chunks content into semantic segments (700 chars max)
-- Generates high-dimensional embeddings (3072D) using Google's latest models
-- Stores in Pinecone for lightning-fast similarity search
+- Generates embeddings (3072D) using Google's models
+- Stores in Pinecone for similarity search
 - Retrieves relevant context for AI responses
 
 ### Conversation Flow
@@ -42,9 +42,9 @@ Built a fully functional AI customer service agent that can:
 ## 📊 Performance
 
 - **Response Time**: < 2 seconds for most queries
-- **Accuracy**: Context-aware responses based on actual company data
-- **Scalability**: Handles unlimited concurrent conversations
-- **Uptime**: 99.9% availability with proper error handling
+- **Accuracy**: Context-aware responses based on company data
+- **Scalability**: Handles concurrent conversations
+- **Uptime**: 99.99% uptime availability with error handling
 
 ## 🔧 Setup
 
@@ -90,21 +90,21 @@ npm run dev
 
 ## 🎯 Key Features
 
-### Intelligent Context Retrieval
+### Context Retrieval
 
-- Semantic search across entire knowledge base
+- Semantic search across knowledge base
 - Automatic relevance scoring
-- Context window optimization for better responses
+- Context optimization for responses
 
 ### Voice & Text Support
 
-- Seamless voice conversations via Vapi.ai
+- Voice conversations via Vapi.ai
 - Real-time transcription and response
-- Multi-modal interaction capabilities
+- Multi-modal interaction
 
-### Automated Data Management
+### Data Management
 
-- Scheduled web scraping for content updates
+- Web scraping for content updates
 - Automatic chunking and embedding generation
 - Vector database optimization
 
@@ -112,41 +112,27 @@ npm run dev
 
 - Error handling and logging
 - Rate limiting and API management
-- Scalable architecture design
+- Scalable architecture
 
 ## 📈 Architecture Highlights
 
 ### Vector Database Design
 
-- 3072-dimensional embeddings for maximum semantic accuracy
+- 3072-dimensional embeddings for semantic accuracy
 - Namespace organization for multi-tenant support
-- Optimized query performance with metadata filtering
+- Query performance with metadata filtering
 
 ### AI Pipeline
 
-- Google Gemini 2.0 Flash Lite for fast, accurate responses
+- Google Gemini 2.0 Flash Lite for responses
 - Embedding-001 model for semantic understanding
 - Context-aware prompt engineering
 
-### Frontend Excellence
+### Frontend
 
 - Modern React with Server Components
 - Responsive design with Tailwind CSS
 - Real-time conversation interface
-
-## 🎨 UI/UX
-
-- Clean, professional interface
-- Real-time conversation display
-- Voice call controls and status indicators
-- Responsive design for all devices
-
-## 🔒 Security & Reliability
-
-- Environment variable management
-- API key security
-- Error boundary implementation
-- Graceful degradation
 
 ## 🚀 Deployment
 
@@ -163,19 +149,10 @@ Ready for production deployment on:
 - Supports streaming and non-streaming responses
 - Automatic context retrieval and response generation
 
-## 🤝 Contributing
-
-This is a production-ready system, but improvements are always welcome:
-
-- Bug fixes
-- Performance optimizations
-- New AI model integrations
-- UI/UX enhancements
-
 ## 📄 License
 
 MIT License - feel free to use this for your own projects.
 
 ---
 
-_Built with modern web technologies and AI best practices. Handles real customer conversations with intelligence and accuracy._
+_Built with modern web technologies and AI best practices._
