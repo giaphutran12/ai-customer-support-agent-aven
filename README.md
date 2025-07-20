@@ -1,6 +1,9 @@
 # AI Customer Service Agent
 
 A customer service automation platform that uses AI to provide intelligent responses with real-time vector search and natural language processing.
+Live demonstration: https://youtu.be/pnrKh72DNo8
+
+[![Watch the demo](https://img.youtube.com/vi/pnrKh72DNo8/hqdefault.jpg)](https://youtu.be/pnrKh72DNo8)
 
 #Overview
 ![Overview workflow](assets/idea.svg)

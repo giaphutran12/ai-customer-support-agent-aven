@@ -56,14 +56,72 @@ function chunkText(text: string, maxChunkSize: number = 700): string[] {
   return chunks;
 }
 
+// Helper function to remove URLs from text
+function removeUrls(text: string): string {
+  // Remove markdown-style links but keep the link text
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, "$1");
+  // Remove any remaining raw URLs
+  text = text.replace(/https?:\/\/[^\s\)\]]+/g, "");
+  return text;
+}
+
+// Helper function to remove navigation bar items from text
+function removeNavBarItems(text: string): string {
+  // List of nav items to remove (add more as needed)
+  const navItems = [
+    "Card",
+    "How It Works",
+    "Reviews",
+    "Support",
+    "App",
+    "Who We Are",
+    "Sign In",
+    "About Us",
+    "Contact Us",
+    "Home",
+  ];
+  // Remove lines that are just nav items (case-insensitive, with or without dashes or bullets)
+  navItems.forEach(item => {
+    // Remove lines like: - Card, * Card, Card, etc.
+    const regex = new RegExp(`^[-*\s]*${item}[-*\s]*$`, "gmi");
+    text = text.replace(regex, "");
+    // Remove markdown links like: - [Card](...) or [Card](...)
+    const mdRegex = new RegExp(
+      `^[-*\s]*\\[${item}\\]\\([^)]*\\)[-*\s]*$`,
+      "gmi"
+    );
+    text = text.replace(mdRegex, "");
+  });
+  // Remove any extra blank lines left behind
+  text = text.replace(/\n{2,}/g, "\n");
+  return text;
+}
+
 async function main() {
   const app = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
   const scrapeURLs = [
     "https://www.aven.com",
     "https://www.aven.com/education",
-    "https://www.aven.com/reviews",
     "https://www.aven.com/support",
     "https://www.aven.com/about",
+    "https://www.aven.com/disclosures",
+    "https://www.aven.com/education/what-credit-score-is-needed-for-the-aven-card",
+    "https://www.aven.com/education/what-is-an-aven-card",
+    "https://www.aven.com/education/can-you-get-cash-from-aven-card",
+    "https://www.aven.com/education/home-depot-credit-card-vs-aven-home-equity-credit-card",
+    "https://www.aven.com/education/mobile-banking-security-tips",
+    "https://www.aven.com/education/home-equity-line-of-credit-heloc-card-what-is-it",
+    "https://www.aven.com/education/home-equity-line-of-credit-heloc-card-how-it-works",
+    "https://www.aven.com/education/home-equity-credit-card-how-to-get-one",
+    "https://www.aven.com/education/the-fastest-way-to-get-a-heloc",
+    "https://www.aven.com/education/when-are-helocs-home-equity-lines-of-credit-a-good-idea",
+    "https://www.aven.com/education/what-is-a-home-equity-line-of-credit-heloc-a-beginners-guide",
+    "https://www.aven.com/education/home-equity-lines-credit-helocs-vs-mortgages-similarities-differences",
+    "https://www.aven.com/education/how-are-heloc-rates-determined",
+    "https://www.aven.com/education/refinancing-a-heloc",
+    "https://www.aven.com/education/how-to-get-lowest-rate",
+    "https://www.aven.com/education/fixed-or-variable",
+    "https://www.aven.com/education/heloc-on-rental-properties",
   ];
 
   const namespace = pc
@@ -97,7 +155,11 @@ async function main() {
 
       // Process each chunk
       for (let i = 0; i < textChunks.length; i++) {
-        const chunk = textChunks[i];
+        let chunk = textChunks[i];
+
+        // Clean up the chunk by removing URLs and nav bar items
+        chunk = removeUrls(chunk);
+        chunk = removeNavBarItems(chunk);
 
         try {
           // Generate embedding for this chunk using the embedding model

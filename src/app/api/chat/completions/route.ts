@@ -4,7 +4,7 @@ import { Logger } from "@/utils/logger";
 import { env } from "@/config/env";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GoogleGenAI } from "@google/genai";
+//import { GoogleGenAI } from "@google/genai";
 
 const logger = new Logger("API:Chat");
 
@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
     const embedding = await embeddingModel.embedContent(query);
     const response = await namespace.query({
       vector: embedding.embedding.values,
-      topK: 15,
+      topK: 30,
       includeMetadata: true,
-      includeValues: true,
+      includeValues: false,
     });
 
     logger.info("Pinecone response", response);
@@ -57,17 +57,26 @@ export async function POST(req: NextRequest) {
       ?.map(match => match.metadata?.chunk_text)
       .join("\n\n");
     logger.info("Context:", context);
-    const geminiPrompt = `Answer my question based on the following context: ${context}. just answer straight to the point, don't say anything unncessary.`;
+    const geminiPrompt = `
+You are a helpful, factual, and concise sales representative for a fintech company called Aven.
+
+Using the information provided in the following context, answer the user's question.
+Context:
+${context}
+
+User Question:
+${query}
+`;
     const promptPayload = {
       model: "gemini-2.0-flash-lite",
       messages: [
         {
-          role: "user",
+          role: "assistant",
           content: geminiPrompt,
         },
       ] as OpenAI.Chat.ChatCompletionMessageParam[],
-      max_tokens: 500,
-      temperature: 0.7,
+      max_tokens: 170,
+      temperature: 1.0,
     };
     logger.info("Prompt payload for Gemini", promptPayload);
 
@@ -96,8 +105,8 @@ export async function POST(req: NextRequest) {
     const completionPayload = {
       model: "gemini-2.0-flash-lite",
       messages: modifiedMessages,
-      max_tokens: max_tokens || 150,
-      temperature: temperature || 0.7,
+      max_tokens: max_tokens || 80,
+      temperature: temperature || 0.5,
       stream: !!stream,
     };
     logger.info("Completion payload for Gemini", completionPayload);
