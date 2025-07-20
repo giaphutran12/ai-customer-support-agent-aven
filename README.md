@@ -2,6 +2,9 @@
 
 A customer service automation platform that uses AI to provide intelligent responses with real-time vector search and natural language processing.
 
+#Overview
+![Overview workflow](assets/idea.svg)
+
 ## 🚀 What This Does
 
 Built an AI customer service agent that can:
