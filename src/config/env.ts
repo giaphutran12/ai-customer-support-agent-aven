@@ -11,7 +11,6 @@ const envSchema = z.object({
   GOOGLE_API_KEY: z.string(),
   FIRECRAWL_API_KEY: z.string(),
   PINECONE_API_KEY: z.string(),
-
 });
 
 // Function to validate environment variables
@@ -20,11 +19,11 @@ const validateEnv = () => {
     logger.info("Validating environment variables");
     const env = {
       VAPI_PRIVATE_KEY: process.env.VAPI_PRIVATE_KEY,
-      VAPI_PUBLIC_KEY:process.env.VAPI_PUBLIC_KEY,
-      VAPI_ASSISTANT_ID:process.env.VAPI_ASSISTANT_ID,
-      GOOGLE_API_KEY:process.env.GOOGLE_API_KEY,
-      FIRECRAWL_API_KEY:process.env.FIRECRAWL_API_KEY,
-      PINECONE_API_KEY:process.env.PINECONE_API_KEY,
+      VAPI_PUBLIC_KEY: process.env.VAPI_PUBLIC_KEY,
+      VAPI_ASSISTANT_ID: process.env.VAPI_ASSISTANT_ID,
+      GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+      FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
+      PINECONE_API_KEY: process.env.PINECONE_API_KEY,
     };
     const parsed = envSchema.parse(env);
     logger.info("Environment variables validated successfully");
