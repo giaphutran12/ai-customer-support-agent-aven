@@ -23,25 +23,18 @@ function chunkText(text: string, maxChunkSize: number = 700): string[] {
     const trimmedSentence = sentence.trim();
 
     // If adding this sentence would exceed the limit, save current chunk and start new one
-    if (currentChunk.length + trimmedSentence.length + 1 > maxChunkSize) {
+    if (ChunkTooLong(currentChunk, trimmedSentence, maxChunkSize)) {
       if (currentChunk.length > 0) {
         chunks.push(currentChunk.trim());
         currentChunk = trimmedSentence;
       } else {
         // If a single sentence is too long, split it by words
-        const words = trimmedSentence.split(" ");
-        for (const word of words) {
-          if (currentChunk.length + word.length + 1 > maxChunkSize) {
-            if (currentChunk.length > 0) {
-              chunks.push(currentChunk.trim());
-              currentChunk = word;
-            } else {
-              chunks.push(word);
-            }
-          } else {
-            currentChunk += (currentChunk.length > 0 ? " " : "") + word;
-          }
-        }
+        const wordChunks = splitLongSentenceByWords(
+          trimmedSentence,
+          maxChunkSize
+        );
+        chunks.push(...wordChunks);
+        currentChunk = "";
       }
     } else {
       currentChunk += (currentChunk.length > 0 ? " " : "") + trimmedSentence;
@@ -54,47 +47,6 @@ function chunkText(text: string, maxChunkSize: number = 700): string[] {
   }
 
   return chunks;
-}
-
-// Helper function to remove URLs from text
-function removeUrls(text: string): string {
-  // Remove markdown-style links but keep the link text
-  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, "$1");
-  // Remove any remaining raw URLs
-  text = text.replace(/https?:\/\/[^\s\)\]]+/g, "");
-  return text;
-}
-
-// Helper function to remove navigation bar items from text
-function removeNavBarItems(text: string): string {
-  // List of nav items to remove (add more as needed)
-  const navItems = [
-    "Card",
-    "How It Works",
-    "Reviews",
-    "Support",
-    "App",
-    "Who We Are",
-    "Sign In",
-    "About Us",
-    "Contact Us",
-    "Home",
-  ];
-  // Remove lines that are just nav items (case-insensitive, with or without dashes or bullets)
-  navItems.forEach(item => {
-    // Remove lines like: - Card, * Card, Card, etc.
-    const regex = new RegExp(`^[-*\s]*${item}[-*\s]*$`, "gmi");
-    text = text.replace(regex, "");
-    // Remove markdown links like: - [Card](...) or [Card](...)
-    const mdRegex = new RegExp(
-      `^[-*\s]*\\[${item}\\]\\([^)]*\\)[-*\s]*$`,
-      "gmi"
-    );
-    text = text.replace(mdRegex, "");
-  });
-  // Remove any extra blank lines left behind
-  text = text.replace(/\n{2,}/g, "\n");
-  return text;
 }
 
 async function main() {
@@ -241,3 +193,78 @@ async function main() {
 }
 
 main();
+
+// Helper to split a long sentence by words into chunks
+function splitLongSentenceByWords(
+  sentence: string,
+  maxChunkSize: number
+): string[] {
+  const words = sentence.split(" ");
+  const wordChunks: string[] = [];
+  let currentWordChunk = "";
+  for (const word of words) {
+    if (currentWordChunk.length + word.length + 1 > maxChunkSize) {
+      if (currentWordChunk.length > 0) {
+        wordChunks.push(currentWordChunk.trim());
+        currentWordChunk = word;
+      } else {
+        wordChunks.push(word);
+      }
+    } else {
+      currentWordChunk += (currentWordChunk.length > 0 ? " " : "") + word;
+    }
+  }
+  if (currentWordChunk.length > 0) {
+    wordChunks.push(currentWordChunk.trim());
+  }
+  return wordChunks;
+}
+
+// Helper function to remove URLs from text
+function removeUrls(text: string): string {
+  // Remove markdown-style links but keep the link text
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, "$1");
+  // Remove any remaining raw URLs
+  text = text.replace(/https?:\/\/[^\s\)\]]+/g, "");
+  return text;
+}
+
+// Helper function to remove navigation bar items from text
+function removeNavBarItems(text: string): string {
+  // List of nav items to remove (add more as needed)
+  const navItems = [
+    "Card",
+    "How It Works",
+    "Reviews",
+    "Support",
+    "App",
+    "Who We Are",
+    "Sign In",
+    "About Us",
+    "Contact Us",
+    "Home",
+  ];
+  // Remove lines that are just nav items (case-insensitive, with or without dashes or bullets)
+  navItems.forEach(item => {
+    // Remove lines like: - Card, * Card, Card, etc.
+    const regex = new RegExp(`^[-*\s]*${item}[-*\s]*$`, "gmi");
+    text = text.replace(regex, "");
+    // Remove markdown links like: - [Card](...) or [Card](...)
+    const mdRegex = new RegExp(
+      `^[-*\s]*\\[${item}\\]\\([^)]*\\)[-*\s]*$`,
+      "gmi"
+    );
+    text = text.replace(mdRegex, "");
+  });
+  // Remove any extra blank lines left behind
+  text = text.replace(/\n{2,}/g, "\n");
+  return text;
+}
+//Helper function to check if adding a setence to this chunk will make it excedd the chunk limite
+function ChunkTooLong(
+  currentChunk: string,
+  trimmedSentence: string,
+  maxChunkSize: number
+) {
+  return currentChunk.length + trimmedSentence.length + 1 > maxChunkSize;
+}
