@@ -6,6 +6,7 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 //import { GoogleGenAI } from "@google/genai";
 
+//////MAIN CODE//////////////////////////////////////////////////////////////////////////////////
 const logger = new Logger("API:Chat");
 
 const pc = new Pinecone({ apiKey: env.PINECONE_API_KEY });
@@ -44,29 +45,9 @@ export async function POST(req: NextRequest) {
     }
     const query = lastMessage.content;
     logger.info("Query", query);
-    const embedding = await embeddingModel.embedContent(query);
-    const response = await namespace.query({
-      vector: embedding.embedding.values,
-      topK: 30,
-      includeMetadata: true,
-      includeValues: false,
-    });
-
-    logger.info("Pinecone response", response);
-    const context = response.matches
-      ?.map(match => match.metadata?.chunk_text)
-      .join("\n\n");
+    const context = await fetchContextFromPinecone(query);
     logger.info("Context:", context);
-    const geminiPrompt = `
-You are a helpful, factual, and concise sales representative for a fintech company called Aven.
-
-Using the information provided in the following context, answer the user's question.
-Context:
-${context}
-
-User Question:
-${query}
-`;
+    const geminiPrompt = buildGeminiPrompt(context, query);
     const promptPayload = {
       model: "gemini-2.0-flash-lite",
       messages: [
@@ -83,16 +64,9 @@ ${query}
     const prompt = await gemini.chat.completions.create(promptPayload);
     // Use a type guard to safely access the message property
     let promptChoice = lastMessage.content;
-    if (
-      prompt.choices &&
-      prompt.choices[0] &&
-      typeof prompt.choices[0] === "object" &&
-      "message" in (prompt.choices[0] as any) &&
-      (prompt.choices[0] as any).message &&
-      typeof (prompt.choices[0] as any).message === "object" &&
-      "content" in (prompt.choices[0] as any).message
-    ) {
-      promptChoice = (prompt.choices[0] as any).message.content;
+    const messageContent = getMessageContent(prompt);
+    if (messageContent) {
+      promptChoice = messageContent;
     }
 
     // Step 2: Prepare the modified messages array
@@ -119,56 +93,20 @@ ${query}
           completionPayload as OpenAI.Chat.ChatCompletionCreateParamsStreaming
         );
 
-        // Create a ReadableStream for proper SSE streaming
-        const stream = new ReadableStream({
-          async start(controller) {
-            try {
-              for await (const chunk of completionStream) {
-                // Send each chunk as SSE data
-                const data = `data: ${JSON.stringify(chunk)}\n\n`;
-                controller.enqueue(new TextEncoder().encode(data));
-              }
-              // Send the [DONE] message to terminate the stream
-              controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
-              controller.close();
-            } catch (error) {
-              logger.error("Error in streaming:", error);
-              controller.error(error);
-            }
-          },
-        });
-
-        // Return streaming response with proper headers
-        return new Response(stream, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            Connection: "keep-alive",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-          },
-        });
+        // Use helper to return streaming response
+        return streamGeminiResponse(completionStream, logger);
       } catch (err) {
-        logger.error(
-          "Streaming not supported or failed, falling back to non-streaming",
-          err
-        );
+        LogStreamingError(err);
         // Fallback to non-streaming
-        const completion = await gemini.chat.completions.create({
-          ...completionPayload,
-          stream: false,
-        });
-        logger.info("Completion result (fallback)", completion);
-        return NextResponse.json(completion);
+        return await getGeminiCompletion(
+          gemini,
+          completionPayload,
+          logger,
+          "Completion result (fallback)"
+        );
       }
     } else {
-      const completion = await gemini.chat.completions.create({
-        ...completionPayload,
-        stream: false,
-      });
-      logger.info("Completion result", completion);
-      return NextResponse.json(completion);
+      return await getGeminiCompletion(gemini, completionPayload, logger);
     }
   } catch (e) {
     logger.error("Error in Gemini API call", e);
@@ -177,4 +115,102 @@ ${query}
       { status: 500 }
     );
   }
+}
+//////END OF MAIN CODE////////////////////////////////////////////////////////////////////////////
+
+// Helper to safely get message content from OpenAI-like response
+function getMessageContent(prompt: any): string | undefined {
+  return prompt?.choices?.[0]?.message?.content;
+}
+
+// Helper to stream Gemini response as SSE
+function streamGeminiResponse(
+  completionStream: AsyncIterable<any>,
+  logger: Logger
+): Response {
+  // Helper to format and enqueue a chunk as SSE
+  function enqueueSSEChunk(
+    controller: ReadableStreamDefaultController,
+    chunk: any
+  ) {
+    const data = `data: ${JSON.stringify(chunk)}\n\n`;
+    controller.enqueue(new TextEncoder().encode(data));
+  }
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of completionStream) {
+          enqueueSSEChunk(controller, chunk);
+        }
+        enqueueSSEChunk(controller, "[DONE]");
+        controller.close();
+      } catch (error) {
+        logger.error("Error in streaming:", error);
+        controller.error(error);
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
+
+// Helper to fetch context from Pinecone using embedding
+async function fetchContextFromPinecone(query: string): Promise<string> {
+  const embedding = await embeddingModel.embedContent(query);
+  const response = await namespace.query({
+    vector: embedding.embedding.values,
+    topK: 30,
+    includeMetadata: true,
+    includeValues: false,
+  });
+  return (
+    response.matches
+      ?.map((match: any) => match.metadata?.chunk_text)
+      .join("\n\n") || ""
+  );
+}
+
+// Helper to build the Gemini prompt string
+function buildGeminiPrompt(context: string, query: string): string {
+  return `
+You are a helpful, factual, and concise sales representative for a fintech company called Aven.
+
+Using the information provided in the following context, answer the user's question.
+Context:
+${context}
+
+User Question:
+${query}
+`;
+}
+
+// Helper to get non-streaming Gemini completion
+async function getGeminiCompletion(
+  gemini: OpenAI,
+  payload: any,
+  logger: Logger,
+  logLabel: string = "Completion result"
+): Promise<NextResponse> {
+  const completion = await gemini.chat.completions.create({
+    ...payload,
+    stream: false,
+  });
+  logger.info(logLabel, completion);
+  return NextResponse.json(completion);
+}
+
+function LogStreamingError(err: unknown) {
+  logger.error(
+    "Streaming not supported or failed, falling back to non-streaming",
+    err
+  );
 }
