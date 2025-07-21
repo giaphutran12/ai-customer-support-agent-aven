@@ -193,7 +193,7 @@ async function fetchContextFromPinecone(query: string): Promise<string> {
 function buildGeminiPrompt(context: string, query: string): string {
   return `
 You are a helpful, factual, and concise sales representative for a fintech company called Aven.
-
+Do not answer questions about illegal, harmful, or sensitive topics.
 Using the information provided in the following context, answer the user's question.
 Context:
 ${context}
