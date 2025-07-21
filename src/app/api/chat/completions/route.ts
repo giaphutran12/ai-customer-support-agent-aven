@@ -92,9 +92,9 @@ export async function POST(req: NextRequest) {
         const completionStream = await gemini.chat.completions.create(
           completionPayload as OpenAI.Chat.ChatCompletionCreateParamsStreaming
         );
-
         // Use helper to return streaming response
-        return streamGeminiResponse(completionStream, logger);
+        const origin = req.headers.get("origin");
+        return streamGeminiResponse(completionStream, logger, origin);
       } catch (err) {
         LogStreamingError(err);
         // Fallback to non-streaming
@@ -126,8 +126,18 @@ function getMessageContent(prompt: any): string | undefined {
 // Helper to stream Gemini response as SSE
 function streamGeminiResponse(
   completionStream: AsyncIterable<any>,
-  logger: Logger
+  logger: Logger,
+  origin: string | null
 ): Response {
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "https://081c50f78973.ngrok-free.app",
+  ];
+  const corsOrigin =
+    origin && allowedOrigins.includes(origin)
+      ? origin
+      : "http://localhost:3000";
+
   // Helper to format and enqueue a chunk as SSE
   function enqueueSSEChunk(
     controller: ReadableStreamDefaultController,
@@ -156,7 +166,7 @@ function streamGeminiResponse(
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": corsOrigin,
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
